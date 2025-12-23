@@ -1,7 +1,7 @@
 // constants/index.ts - Static configuration and data
 
 import { Platform } from 'react-native';
-import { SubscriptionPlan } from '../types';
+import { SubscriptionPlan, JobSeekerSubscriptionPlan } from '../types';
 
 // API Configuration
 export const getApiBaseUrl = (): string => {
@@ -73,6 +73,48 @@ export const DOCUMENT_TYPES = [
   { label: 'Voter ID', value: 'voterid' },
 ];
 
+// Job Seeker Subscription Plans
+export const JOB_SEEKER_SUBSCRIPTION_PLANS: JobSeekerSubscriptionPlan[] = [
+  {
+    id: 'basic',
+    name: 'Basic',
+    price: 299,
+    duration: '1 Year',
+    features: [
+      'Profile visibility to employers',
+      'Apply to unlimited jobs',
+      'Basic job alerts',
+      'Email support',
+    ],
+    color: '#6B7280',
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: 599,
+    duration: '1 Year',
+    features: [
+      'All Basic features',
+      'Featured profile badge',
+      'Priority job alerts',
+      'Resume boost in searches',
+      'Priority support',
+      'Advanced analytics',
+    ],
+    popular: true,
+    color: '#8B5CF6',
+  },
+];
+
+// Job Types
+export const JOB_TYPES = [
+  { label: 'Full Time', value: 'fulltime' },
+  { label: 'Part Time', value: 'parttime' },
+  { label: 'Contract', value: 'contract' },
+  { label: 'Freelance', value: 'freelance' },
+  { label: 'Internship', value: 'internship' },
+];
+
 // AsyncStorage Keys
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
@@ -80,4 +122,6 @@ export const STORAGE_KEYS = {
   USER_DATA: 'user_data',
   WORKER_PROFILE_ID: 'worker_profile_id',
   SUBSCRIPTION_ID: 'subscription_id',
+  JOB_SEEKER_PROFILE_ID: 'job_seeker_profile_id',
+  JOB_SEEKER_SUBSCRIPTION_ID: 'job_seeker_subscription_id',
 };

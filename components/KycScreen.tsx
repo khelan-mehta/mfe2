@@ -10,10 +10,12 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   ChevronLeft,
   Upload,
@@ -25,6 +27,7 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
+  Calendar,
 } from 'lucide-react-native';
 
 import { KycFormData, FlowState } from '../types';
@@ -54,6 +57,8 @@ export const KycScreen: React.FC<Props> = ({ navigation, onBack }) => {
 
   const [submitting, setSubmitting] = useState(false);
   const [kycStep, setKycStep] = useState(1);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date(2000, 0, 1));
 
   // Form state
   const [formData, setFormData] = useState<KycFormData>({
@@ -72,6 +77,29 @@ export const KycScreen: React.FC<Props> = ({ navigation, onBack }) => {
 
   const updateFormData = (key: keyof KycFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Handle date selection
+  const handleDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (date) {
+      setSelectedDate(date);
+      const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      updateFormData('dateOfBirth', formattedDate);
+    }
+  };
+
+  // Format date for display
+  const formatDisplayDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
   // Handle back navigation
@@ -364,13 +392,33 @@ export const KycScreen: React.FC<Props> = ({ navigation, onBack }) => {
         <Text style={sharedStyles.inputLabel}>
           Date of Birth <Text style={sharedStyles.required}>*</Text>
         </Text>
-        <TextInput
-          value={formData.dateOfBirth}
-          onChangeText={(val) => updateFormData('dateOfBirth', val)}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor="#9CA3AF"
-          style={sharedStyles.textInput}
-        />
+        <TouchableOpacity
+          style={styles.datePickerButton}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={[styles.datePickerText, !formData.dateOfBirth && styles.datePickerPlaceholder]}>
+            {formData.dateOfBirth ? formatDisplayDate(formData.dateOfBirth) : 'Select date of birth'}
+          </Text>
+          <Calendar size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={handleDateChange}
+            maximumDate={new Date()}
+            minimumDate={new Date(1920, 0, 1)}
+          />
+        )}
+        {Platform.OS === 'ios' && showDatePicker && (
+          <TouchableOpacity
+            style={styles.datePickerDoneButton}
+            onPress={() => setShowDatePicker(false)}
+          >
+            <Text style={styles.datePickerDoneText}>Done</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={sharedStyles.inputGroup}>
@@ -717,6 +765,37 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     marginTop: 24,
+  },
+
+  // Date Picker styles
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  datePickerText: {
+    fontSize: 15,
+    color: colors.text,
+  },
+  datePickerPlaceholder: {
+    color: '#9CA3AF',
+  },
+  datePickerDoneButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  datePickerDoneText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
 
   // Status View styles

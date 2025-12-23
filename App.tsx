@@ -9,6 +9,7 @@ import { theme } from './theme';
 import HomeScreen from './components/HomeScreen';
 import ProfileScreen from './components/ProfileSection';
 import WorkerSetupScreen from './components/WorkerSetupScreen';
+import JobSetupScreen from './components/JobSetupScreen';
 import KycScreen from './components/KycScreen';
 import AuthScreen from './components/AuthScreen';
 import Loader from './components/Loader';
@@ -92,6 +93,11 @@ export default function App() {
         name="WorkerSetup"
         component={WorkerSetupScreen}
         options={{ title: 'Worker Setup' }}
+      />
+      <Stack.Screen
+        name="JobSetup"
+        component={JobSetupScreen}
+        options={{ title: 'Job Profile Setup' }}
       />
       <Stack.Screen
         name="KycScreen"

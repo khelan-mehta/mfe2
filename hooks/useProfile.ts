@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
-import { UserProfile, WorkerProfile, FlowState } from '../types';
+import { UserProfile, WorkerProfile, FlowState, JobSeekerProfile, JobFlowState } from '../types';
 import { API_BASE_URL, STORAGE_KEYS } from '../constants';
-import { determineFlowState } from '../utils';
+import { determineFlowState, determineJobFlowState } from '../utils';
 import { authorizedFetch } from '../utils/authorizedFetch';
 import { getCurrentLocation } from '../utils/location';
 
@@ -12,11 +12,14 @@ interface UseProfileReturn {
   refreshing: boolean;
   userProfile: UserProfile | null;
   workerProfile: WorkerProfile | null;
+  jobSeekerProfile: JobSeekerProfile | null;
   flowState: FlowState;
+  jobFlowState: JobFlowState;
   loadUserData: () => Promise<void>;
   handleRefresh: () => void;
   handleUnauthorized: () => Promise<void>;
   fetchWorkerProfile: (workerId: string) => Promise<WorkerProfile | null>;
+  fetchJobSeekerProfile: () => Promise<JobSeekerProfile | null>;
 }
 
 export const useProfile = (onLogout?: () => void): UseProfileReturn => {
@@ -24,7 +27,9 @@ export const useProfile = (onLogout?: () => void): UseProfileReturn => {
   const [refreshing, setRefreshing] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [workerProfile, setWorkerProfile] = useState<WorkerProfile | null>(null);
+  const [jobSeekerProfile, setJobSeekerProfile] = useState<JobSeekerProfile | null>(null);
   const [flowState, setFlowState] = useState<FlowState>('loading');
+  const [jobFlowState, setJobFlowState] = useState<JobFlowState>('loading');
 
   /* --------------------
      Logout handler
@@ -37,6 +42,8 @@ export const useProfile = (onLogout?: () => void): UseProfileReturn => {
         STORAGE_KEYS.USER_DATA,
         STORAGE_KEYS.WORKER_PROFILE_ID,
         STORAGE_KEYS.SUBSCRIPTION_ID,
+        STORAGE_KEYS.JOB_SEEKER_PROFILE_ID,
+        STORAGE_KEYS.JOB_SEEKER_SUBSCRIPTION_ID,
       ]);
       onLogout?.();
     } catch (error) {
@@ -68,6 +75,36 @@ export const useProfile = (onLogout?: () => void): UseProfileReturn => {
         return null;
       } catch (error) {
         console.error('Error fetching worker profile:', error);
+        return null;
+      }
+    },
+    [handleUnauthorized]
+  );
+
+  /* --------------------
+     Job Seeker profile fetch
+  -------------------- */
+  const fetchJobSeekerProfile = useCallback(
+    async (): Promise<JobSeekerProfile | null> => {
+      try {
+        const response = await authorizedFetch(
+          `${API_BASE_URL}/job-seeker/profile`,
+          {},
+          handleUnauthorized
+        );
+
+        if (!response.ok) return null;
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setJobSeekerProfile(result.data);
+          return result.data;
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Error fetching job seeker profile:', error);
         return null;
       }
     },
@@ -111,8 +148,15 @@ export const useProfile = (onLogout?: () => void): UseProfileReturn => {
       const newFlowState = determineFlowState(profile);
       setFlowState(newFlowState);
 
+      const newJobFlowState = determineJobFlowState(profile);
+      setJobFlowState(newJobFlowState);
+
       if (profile.worker_profile_id) {
         await fetchWorkerProfile(profile.worker_profile_id);
+      }
+
+      if (profile.job_seeker_profile_id) {
+        await fetchJobSeekerProfile();
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -121,7 +165,7 @@ export const useProfile = (onLogout?: () => void): UseProfileReturn => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [handleUnauthorized, fetchWorkerProfile]);
+  }, [handleUnauthorized, fetchWorkerProfile, fetchJobSeekerProfile]);
 
   /* --------------------
      Pull to refresh
@@ -167,10 +211,13 @@ export const useProfile = (onLogout?: () => void): UseProfileReturn => {
     refreshing,
     userProfile,
     workerProfile,
+    jobSeekerProfile,
     flowState,
+    jobFlowState,
     loadUserData,
     handleRefresh,
     handleUnauthorized,
     fetchWorkerProfile,
+    fetchJobSeekerProfile,
   };
 };

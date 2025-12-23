@@ -23,6 +23,7 @@ import {
   Phone,
   ChevronRight,
   Wrench,
+  Briefcase,
   Shield,
   Settings,
   HelpCircle,
@@ -39,7 +40,7 @@ try {
 
 import { ProfileScreenProps } from '../types';
 import { useProfile } from '../hooks';
-import { getWorkerSetupStatus } from '../utils';
+import { getWorkerSetupStatus, getJobSetupStatus } from '../utils';
 import { colors, sharedStyles } from '../components';
 import { Header } from './Header';
 
@@ -47,12 +48,13 @@ interface Props {
   navigation?: any; // Optional - for React Navigation
   onLogout: () => void;
   onWorkerSetupPress?: () => void; // Optional callback for custom navigation
+  onJobSetupPress?: () => void; // Optional callback for job setup navigation
 }
 
-export const ProfileScreen: React.FC<Props> = ({ navigation, onLogout, onWorkerSetupPress }) => {
+export const ProfileScreen: React.FC<Props> = ({ navigation, onLogout, onWorkerSetupPress, onJobSetupPress }) => {
   // Use Expo Router if available
   const router = useRouter ? useRouter() : null;
-  const { loading, refreshing, userProfile, workerProfile, flowState, handleRefresh } =
+  const { loading, refreshing, userProfile, workerProfile, jobSeekerProfile, flowState, jobFlowState, handleRefresh } =
     useProfile(onLogout);
 
   // Settings states
@@ -93,8 +95,29 @@ export const ProfileScreen: React.FC<Props> = ({ navigation, onLogout, onWorkerS
     }
   };
 
+  // Handle navigation to job setup
+  const handleJobSetupPress = () => {
+    if (onJobSetupPress) {
+      // Use custom callback if provided
+      onJobSetupPress();
+    } else if (router) {
+      // Use Expo Router
+      router.push('/job-setup');
+    } else if (navigation) {
+      // Use React Navigation
+      navigation.navigate('JobSetup');
+    } else {
+      console.warn(
+        'No navigation method available. Please provide navigation prop, use Expo Router, or pass onJobSetupPress callback.'
+      );
+    }
+  };
+
   // Get worker setup status for display
   const workerStatus = getWorkerSetupStatus(userProfile);
+
+  // Get job setup status for display
+  const jobStatus = getJobSetupStatus(userProfile);
 
   // Loading screen
   if (loading && !refreshing) {
@@ -165,6 +188,36 @@ export const ProfileScreen: React.FC<Props> = ({ navigation, onLogout, onWorkerS
             </View>
 
             {/* Progress indicator for incomplete setup */}
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Job Profile Section - Main CTA */}
+        <TouchableOpacity
+          style={styles.workerProfileCard}
+          onPress={handleJobSetupPress}
+          activeOpacity={0.8}>
+          <LinearGradient
+            colors={
+              jobStatus.isComplete
+                ? [colors.success, '#059669']
+                : [colors.purple, colors.purpleDark]
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.workerProfileGradient}>
+            <View style={styles.workerProfileContent}>
+              <View style={styles.workerProfileIcon}>
+                <Briefcase size={28} color="#FFFFFF" />
+              </View>
+              <View style={styles.workerProfileText}>
+                <Text style={styles.workerProfileTitle}>Job Profile</Text>
+                <Text style={styles.workerProfileSubtitle}>{jobStatus.description}</Text>
+              </View>
+              <View style={styles.workerProfileBadge}>
+                <Text style={styles.workerProfileBadgeText}>{jobStatus.label}</Text>
+                <ChevronRight size={18} color="#FFFFFF" />
+              </View>
+            </View>
           </LinearGradient>
         </TouchableOpacity>
 
