@@ -227,46 +227,73 @@ const ServicesScreen = () => {
 
   const getCurrentLocation = () => {
     if (Platform.OS === 'web') {
-      // Web platform geolocation
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          console.log('Location obtained (web):', latitude, longitude);
+      if (!navigator.geolocation) {
+        handleLocationFailure();
+        return;
+      }
 
-          setUserLocation({ latitude, longitude });
-          getLocationName(latitude, longitude);
+      const onSuccess = (position: GeolocationPosition) => {
+        const { latitude, longitude } = position.coords;
 
-          toast.showSuccess('Location Found', 'Showing workers near you');
-        },
-        (error) => {
-          console.warn('Location error (web):', error);
-          setUserLocation({ latitude: 21.1702, longitude: 72.8311 });
-          setLocationName('Surat');
-          toast.showInfo('Using Default Location', 'Enable location for accurate results');
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-      );
-    } else {
-      // React Native geolocation
-      Geolocation.getCurrentPosition(
-        (position: any) => {
-          const { latitude, longitude } = position.coords;
-          console.log('Location obtained (native):', latitude, longitude);
+        console.log('Location obtained (web):', latitude, longitude);
 
-          setUserLocation({ latitude, longitude });
-          getLocationName(latitude, longitude);
+        setUserLocation({ latitude, longitude });
+        getLocationName(latitude, longitude);
 
-          toast.showSuccess('Location Found', 'Showing workers near you');
-        },
-        (error) => {
-          console.warn('Location error (native):', error);
-          setUserLocation({ latitude: 21.1702, longitude: 72.8311 });
-          setLocationName('Surat');
-          toast.showInfo('Using Default Location', 'Enable location for accurate results');
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-      );
+        toast.showSuccess('Location Found', 'Showing workers near you');
+      };
+
+      const onError = (err: GeolocationPositionError) => {
+        console.warn('Location error (web):', err);
+
+        // Retry once if timeout
+        if (err.code === err.TIMEOUT) {
+          navigator.geolocation.getCurrentPosition(onSuccess, fallbackError, {
+            enableHighAccuracy: false,
+            timeout: 30000,
+          });
+          return;
+        }
+
+        fallbackError(err);
+      };
+
+      const fallbackError = (_err: GeolocationPositionError) => {
+        setUserLocation({ latitude: 21.1702, longitude: 72.8311 });
+        setLocationName('Surat');
+        toast.showInfo('Using Default Location', 'Enable location for accurate results');
+      };
+
+      navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+        enableHighAccuracy: false, // IMPORTANT for web
+        timeout: 15000,
+        maximumAge: 60000,
+      });
+
+      return;
     }
+
+    // ---------- Native (Android / iOS) ----------
+    Geolocation.getCurrentPosition(
+      (position: any) => {
+        const { latitude, longitude } = position.coords;
+
+        setUserLocation({ latitude, longitude });
+        getLocationName(latitude, longitude);
+
+        toast.showSuccess('Location Found', 'Showing workers near you');
+      },
+      () => {
+        setUserLocation({ latitude: 21.1702, longitude: 72.8311 });
+        setLocationName('Surat');
+        toast.showInfo('Using Default Location', 'Enable location for accurate results');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000,
+      }
+    );
   };
 
   /* -------------------- API CALLS -------------------- */

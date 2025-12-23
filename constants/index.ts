@@ -6,7 +6,7 @@ import { SubscriptionPlan, JobSeekerSubscriptionPlan } from '../types';
 // API Configuration
 export const getApiBaseUrl = (): string => {
   if (Platform.OS === 'web') {
-    return 'https://api.mentoservices.com/api/v1';
+    return 'http://localhost:8000/api/v1';
   } else if (Platform.OS === 'android') {
     return 'https://api.mentoservices.com/api/v1';
   } else {

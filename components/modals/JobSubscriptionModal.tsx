@@ -16,16 +16,14 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import RazorpayCheckout from 'react-native-razorpay';
-import {
-  X,
-  Briefcase,
-  Star,
-  CheckCircle,
-  ChevronRight,
-  Sparkles,
-} from 'lucide-react-native';
+import { X, Briefcase, Star, CheckCircle, ChevronRight, Sparkles } from 'lucide-react-native';
 import { JobSeekerSubscriptionPlan, PaymentStatus, JobFlowState, UserProfile } from '../../types';
-import { API_BASE_URL, JOB_SEEKER_SUBSCRIPTION_PLANS, RAZORPAY_KEY, STORAGE_KEYS } from '../../constants';
+import {
+  API_BASE_URL,
+  JOB_SEEKER_SUBSCRIPTION_PLANS,
+  RAZORPAY_KEY,
+  STORAGE_KEYS,
+} from '../../constants';
 import { adjustColor } from '../../utils';
 import { colors, sharedStyles } from '../styles/shared';
 import { useToast } from '../../context/ToastContext';
@@ -68,24 +66,25 @@ export const JobSubscriptionModal: React.FC<JobSubscriptionModalProps> = ({
       setProcessingPayment(true);
       setPaymentStatus('processing');
       const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-
+      
       const response = await fetch(`${API_BASE_URL}/job-seeker/subscription/create/${plan.id}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const result = await response.json();
-
+      const { subscription_id, order } = result.data;
+      console.log('RAZORPAY ORDER FROM BACKEND:', order);
       if (result.success) {
         const { subscription_id, order } = result.data;
-
+        
         const options = {
           key: RAZORPAY_KEY,
           amount: order.amount,
           currency: order.currency,
           name: `${plan.name} Plan`,
           description: `Job Seeker Subscription for ${plan.duration}`,
-          order_id: order.id,
+          order_id: order.order_id,
           prefill: {
             name: fullName || userProfile?.name || 'User',
             email: userProfile?.email || '',
@@ -163,6 +162,12 @@ export const JobSubscriptionModal: React.FC<JobSubscriptionModalProps> = ({
   const handlePaymentSuccess = async (paymentData: any, subscriptionId: string) => {
     try {
       const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      console.log('VERIFY PAYLOAD', {
+        subscription_id: subscriptionId,
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_signature: paymentData.razorpay_signature,
+      });
 
       const response = await fetch(`${API_BASE_URL}/job-seeker/subscription/verify`, {
         method: 'POST',
@@ -222,8 +227,7 @@ export const JobSubscriptionModal: React.FC<JobSubscriptionModalProps> = ({
       key={plan.id}
       style={[styles.planCard, plan.popular && styles.planCardPopular]}
       onPress={() => handlePlanSelection(plan)}
-      disabled={processingPayment}
-    >
+      disabled={processingPayment}>
       {plan.popular && (
         <View style={styles.popularBadge}>
           <Star size={12} color="#FFFFFF" fill="#FFFFFF" />
@@ -265,8 +269,7 @@ export const JobSubscriptionModal: React.FC<JobSubscriptionModalProps> = ({
           colors={[plan.color, adjustColor(plan.color, -20)]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.selectButtonGradient}
-        >
+          style={styles.selectButtonGradient}>
           <Text style={styles.selectButtonText}>
             {processingPayment && selectedPlan?.id === plan.id ? 'Processing...' : 'Select Plan'}
           </Text>
@@ -309,8 +312,7 @@ export const JobSubscriptionModal: React.FC<JobSubscriptionModalProps> = ({
       visible={visible}
       animationType="none"
       transparent
-      onRequestClose={() => canClose && onClose()}
-    >
+      onRequestClose={() => canClose && onClose()}>
       <View style={sharedStyles.modalOverlay}>
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
@@ -330,8 +332,7 @@ export const JobSubscriptionModal: React.FC<JobSubscriptionModalProps> = ({
                 },
               ],
             },
-          ]}
-        >
+          ]}>
           <View style={sharedStyles.modalHandle} />
 
           <View style={sharedStyles.modalHeader}>
@@ -345,8 +346,7 @@ export const JobSubscriptionModal: React.FC<JobSubscriptionModalProps> = ({
                 onPress={() => {
                   onClose();
                   setPaymentStatus('idle');
-                }}
-              >
+                }}>
                 <X size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
@@ -358,8 +358,7 @@ export const JobSubscriptionModal: React.FC<JobSubscriptionModalProps> = ({
             style={sharedStyles.modalScroll}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 40 }}
-            scrollEnabled={paymentStatus === 'idle' || paymentStatus === 'failed'}
-          >
+            scrollEnabled={paymentStatus === 'idle' || paymentStatus === 'failed'}>
             {(paymentStatus === 'idle' || paymentStatus === 'failed') &&
               JOB_SEEKER_SUBSCRIPTION_PLANS.map(renderPlanCard)}
           </ScrollView>
